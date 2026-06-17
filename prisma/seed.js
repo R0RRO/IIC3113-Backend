@@ -10,6 +10,14 @@ const hoursAgo = (h) => new Date(Date.now() - h * 3600000);
 
 // --- Zonas ---
 const zones = [
+  // Zonas previas (Valparaiso) que se preservan
+  { id: 'valparaiso-centro', name: 'Valparaíso Centro', riskLevel: 'critical', lat: -33.0472, lng: -71.6127, radiusKm: 5, volunteers: 45,
+    description: 'Zona centro de Valparaíso afectada por incendio forestal. Apoyo urgente en evacuación y distribución de suministros.' },
+  { id: 'vina-del-mar-norte', name: 'Viña del Mar Norte', riskLevel: 'high', lat: -33.0153, lng: -71.5500, radiusKm: 5, volunteers: 32,
+    description: 'Sector norte de Viña del Mar con daños estructurales por terremoto. Evaluación de edificios y rescate.' },
+  { id: 'quilpue-sur', name: 'Quilpué Sur', riskLevel: 'medium', lat: -33.0550, lng: -71.4400, radiusKm: 5, volunteers: 18,
+    description: 'Zona sur de Quilpué con inundaciones. Apoyo en limpieza y distribución de agua potable.' },
+  // Zonas nuevas
   {
     id: 'san-joaquin',
     name: 'San Joaquín',
@@ -46,6 +54,15 @@ const users = [
 
 // --- Reportes (authorKey enlaza con users) ---
 const reports = [
+  // Valparaíso Centro
+  { authorKey: 'pedro', zoneId: 'valparaiso-centro', title: 'Familias sin agua potable en Cerro Alegre', category: 'supplies', urgent: false, votes: 156, comments: 0, lat: -33.0440, lng: -71.6160, volunteersNeeded: 10, hours: 30 },
+  { authorKey: 'diego', zoneId: 'valparaiso-centro', title: 'Derrumbe bloquea acceso a Cerro Barón', category: 'rescue', urgent: true, votes: 234, comments: 0, lat: -33.0420, lng: -71.6020, volunteersNeeded: 0, hours: 28 },
+  // Viña del Mar Norte
+  { authorKey: 'fernanda', zoneId: 'vina-del-mar-norte', title: 'Edificio con daño estructural en Av. Libertad', category: 'infrastructure', urgent: false, votes: 178, comments: 0, lat: -33.0180, lng: -71.5520, volunteersNeeded: 5, hours: 40 },
+  { authorKey: 'maria', zoneId: 'vina-del-mar-norte', title: 'Adultos mayores sin medicamentos en Recreo', category: 'medical', urgent: true, votes: 210, comments: 0, lat: -33.0200, lng: -71.5560, volunteersNeeded: 0, hours: 36 },
+  // Quilpué Sur
+  { authorKey: 'jorge', zoneId: 'quilpue-sur', title: 'Calle principal inundada impide paso de vehículos', category: 'infrastructure', urgent: false, votes: 145, comments: 0, lat: -33.0560, lng: -71.4420, volunteersNeeded: 8, hours: 33 },
+  { authorKey: 'ana', zoneId: 'quilpue-sur', title: 'Albergue en escuela municipal necesita frazadas', category: 'supplies', urgent: false, votes: 67, comments: 0, lat: -33.0540, lng: -71.4380, volunteersNeeded: 15, hours: 35 },
   // San Joaquín
   { authorKey: 'pedro', zoneId: 'san-joaquin', title: 'Inundación corta Av. Vicuña Mackenna', category: 'infrastructure', urgent: true, votes: 142, comments: 0, lat: -33.4920, lng: -70.6250, volunteersNeeded: 0, hours: 5 },
   { authorKey: 'maria', zoneId: 'san-joaquin', title: 'Adulto mayor sin oxígeno en Villa O\'Higgins', category: 'medical', urgent: true, votes: 210, comments: 0, lat: -33.4955, lng: -70.6300, volunteersNeeded: 0, hours: 3 },
@@ -60,6 +77,8 @@ const reports = [
 
 // Inscripciones reales (reportTitle -> voluntarios). enrolledCount se calcula de aquí.
 const enrollments = {
+  'Familias sin agua potable en Cerro Alegre': ['maria', 'ana'],
+  'Albergue en escuela municipal necesita frazadas': ['ana'],
   'Familias evacuadas necesitan colchonetas y frazadas': ['maria', 'diego'],
   'Voluntarios para despejar barro en pasajes': ['maria', 'diego', 'matias'],
   'Corte de agua afecta a Providencia': ['ana'],
