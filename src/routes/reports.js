@@ -38,6 +38,35 @@ const voteSchema = z.object({
   userLng: z.number(),
 });
 
+// GET /reports?zoneId=...  (lista; todos o por zona)
+router.get('/', async (req, res, next) => {
+  try {
+    const where = req.query.zoneId ? { zoneId: req.query.zoneId } : {};
+    const reports = await prisma.report.findMany({ where, orderBy: { votes: 'desc' } });
+    res.json(reports);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /reports/me/state  (estado del usuario: votos, inscripciones, completados)
+router.get('/me/state', requireAuth, async (req, res, next) => {
+  try {
+    const [votes, enrollments, completions] = await Promise.all([
+      prisma.vote.findMany({ where: { userId: req.user.id }, select: { reportId: true, direction: true } }),
+      prisma.enrollment.findMany({ where: { userId: req.user.id }, select: { reportId: true } }),
+      prisma.completionVote.findMany({ where: { userId: req.user.id }, select: { reportId: true } }),
+    ]);
+    res.json({
+      votes: Object.fromEntries(votes.map((v) => [v.reportId, v.direction])),
+      enrollments: enrollments.map((e) => e.reportId),
+      completions: completions.map((c) => c.reportId),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /reports/:id  (incluye estado del usuario si manda token)
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
