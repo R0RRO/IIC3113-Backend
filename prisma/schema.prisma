@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("vecino") // vecino | voluntario | admin
+  createdAt DateTime @default(now())
+
+  reports         Report[]
+  votes           Vote[]
+  enrollments     Enrollment[]
+  completionVotes CompletionVote[]
+  notifications   Notification[]
+}
+
+model Zone {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  lat         Float
+  lng         Float
+  riskLevel   String   @default("medium") // critical | high | medium | low
+  radiusKm    Float    @default(5)
+  volunteers  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  reports Report[]
+}
+
+model Report {
+  id               String   @id @default(cuid())
+  zone             Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  zoneId           String
+  title            String
+  description      String
+  category         String   @default("rescue")
+  votes            Int      @default(0)
+  urgent           Boolean  @default(false)
+  author           User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId         String?
+  authorName       String   @default("")
+  authorRole       String   @default("vecino")
+  lat              Float?
+  lng              Float?
+  volunteersNeeded Int      @default(0)
+  enrolledCount    Int      @default(0)
+  completionVotes  Int      @default(0)
+  completed        Boolean  @default(false)
+  comments         Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  voteRecords       Vote[]
+  enrollments       Enrollment[]
+  completionRecords CompletionVote[]
+
+  @@index([zoneId])
+}
+
+model Vote {
+  id        String @id @default(cuid())
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  report    Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String
+  direction Int // 1 o -1
+
+  @@unique([userId, reportId])
+}
+
+model Enrollment {
+  id       String @id @default(cuid())
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId String
+
+  @@unique([userId, reportId])
+}
+
+model CompletionVote {
+  id       String @id @default(cuid())
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId String
+
+  @@unique([userId, reportId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String // enroll | complete | resolved | new_report | role
+  message   String
+  reportId  String?
+  zoneId    String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
