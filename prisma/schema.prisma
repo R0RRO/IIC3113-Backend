@@ -20,6 +20,7 @@ model User {
   enrollments     Enrollment[]
   completionVotes CompletionVote[]
   notifications   Notification[]
+  comments        Comment[]
 }
 
 model Zone {
@@ -61,8 +62,23 @@ model Report {
   voteRecords       Vote[]
   enrollments       Enrollment[]
   completionRecords CompletionVote[]
+  commentList       Comment[]
 
   @@index([zoneId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  report     Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId   String
+  author     User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId   String?
+  authorName String   @default("")
+  authorRole String   @default("vecino")
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([reportId])
 }
 
 model Vote {

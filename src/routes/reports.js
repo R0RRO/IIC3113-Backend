@@ -38,6 +38,8 @@ const voteSchema = z.object({
   userLng: z.number(),
 });
 
+const commentSchema = z.object({ body: z.string().min(1).max(2000) });
+
 // GET /reports?zoneId=...  (lista; todos o por zona)
 router.get('/', async (req, res, next) => {
   try {
@@ -176,6 +178,48 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     if (!existing) return;
     await prisma.report.delete({ where: { id: existing.id } });
     res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /reports/:id/comments
+router.get('/:id/comments', async (req, res, next) => {
+  try {
+    const comments = await prisma.comment.findMany({
+      where: { reportId: req.params.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json(comments);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /reports/:id/comments  (autenticado). Notifica al autor del reporte.
+router.post('/:id/comments', requireAuth, async (req, res, next) => {
+  try {
+    const { body } = commentSchema.parse(req.body);
+    const report = await prisma.report.findUnique({ where: { id: req.params.id } });
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+
+    const comment = await prisma.comment.create({
+      data: {
+        reportId: report.id,
+        authorId: req.user.id,
+        authorName: req.user.name,
+        authorRole: req.user.role,
+        body,
+      },
+    });
+    await prisma.report.update({ where: { id: report.id }, data: { comments: { increment: 1 } } });
+
+    if (report.authorId && report.authorId !== req.user.id) {
+      await notify(report.authorId, 'comment',
+        `${req.user.name} comentó en tu reporte: ${report.title}`,
+        { reportId: report.id, zoneId: report.zoneId });
+    }
+    res.status(201).json(comment);
   } catch (err) {
     next(err);
   }
