@@ -18,6 +18,9 @@ model User {
   locationAt DateTime?
   notifyMode   String  @default("nearby") // all | nearby | zone | off
   activeZoneId String? // zona elegida para el modo "zone"
+  bio           String?  // descripcion del perfil (opcional)
+  preferredArea String?  // area de preferencia del voluntario (opcional)
+  suspended     Boolean  @default(false) // baneado/suspendido por admin
   createdAt  DateTime  @default(now())
 
   reports         Report[]

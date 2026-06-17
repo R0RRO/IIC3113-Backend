@@ -33,6 +33,9 @@ export function publicUser(u) {
     role: u.role,
     notifyMode: u.notifyMode,
     activeZoneId: u.activeZoneId,
+    bio: u.bio,
+    preferredArea: u.preferredArea,
+    suspended: u.suspended,
     hasLocation: u.lat != null && u.lng != null,
     createdAt: u.createdAt,
   };

@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js';
 import zoneRoutes from './routes/zones.js';
 import reportRoutes from './routes/reports.js';
 import notificationRoutes from './routes/notifications.js';
+import userRoutes from './routes/users.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +25,7 @@ app.use('/auth', authRoutes);
 app.use('/zones', zoneRoutes);
 app.use('/reports', reportRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/users', userRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));

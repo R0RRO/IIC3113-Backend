@@ -6,13 +6,14 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-const ROLES = ['vecino', 'voluntario', 'admin'];
-
+// admin NO se puede registrar (se crea por seed/manual)
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1),
-  role: z.enum(ROLES).default('vecino'),
+  role: z.enum(['vecino', 'voluntario']).default('vecino'),
+  bio: z.string().max(500).optional(),
+  preferredArea: z.string().max(120).optional(),
 });
 
 const loginSchema = z.object({
@@ -45,6 +46,7 @@ router.post('/login', async (req, res, next) => {
     if (!user || !(await comparePassword(password, user.password))) {
       return res.status(401).json({ error: 'Credenciales invalidas' });
     }
+    if (user.suspended) return res.status(403).json({ error: 'Cuenta suspendida. Contacta a un administrador.' });
     const token = signToken(user);
     res.json({ token, user: publicUser(user) });
   } catch (err) {
@@ -87,6 +89,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (user.suspended) return res.status(403).json({ error: 'Cuenta suspendida' });
     res.json({ user: publicUser(user) });
   } catch (err) {
     next(err);
