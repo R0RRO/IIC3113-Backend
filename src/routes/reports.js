@@ -225,6 +225,27 @@ router.post('/:id/comments', requireAuth, async (req, res, next) => {
   }
 });
 
+// DELETE /reports/:id/comments/:commentId  (admin o autor del comentario)
+router.delete('/:id/comments/:commentId', requireAuth, async (req, res, next) => {
+  try {
+    const comment = await prisma.comment.findUnique({ where: { id: req.params.commentId } });
+    if (!comment || comment.reportId !== req.params.id) {
+      return res.status(404).json({ error: 'Comentario no encontrado' });
+    }
+    const isAdmin = req.user.role === 'admin';
+    const isAuthor = comment.authorId === req.user.id;
+    if (!isAdmin && !isAuthor) return res.status(403).json({ error: 'Sin permiso' });
+
+    await prisma.$transaction([
+      prisma.comment.delete({ where: { id: comment.id } }),
+      prisma.report.update({ where: { id: comment.reportId }, data: { comments: { decrement: 1 } } }),
+    ]);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /reports/:id/vote  (autenticado + dentro de la zona). Toggle como el front.
 router.post('/:id/vote', requireAuth, async (req, res, next) => {
   try {
