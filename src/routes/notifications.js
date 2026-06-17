@@ -44,4 +44,26 @@ router.post('/read-all', requireAuth, async (req, res, next) => {
   }
 });
 
+// DELETE /notifications  -- borra todas las del usuario
+router.delete('/', requireAuth, async (req, res, next) => {
+  try {
+    await prisma.notification.deleteMany({ where: { userId: req.user.id } });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /notifications/:id  -- borra una
+router.delete('/:id', requireAuth, async (req, res, next) => {
+  try {
+    const n = await prisma.notification.findUnique({ where: { id: req.params.id } });
+    if (!n || n.userId !== req.user.id) return res.status(404).json({ error: 'No encontrada' });
+    await prisma.notification.delete({ where: { id: n.id } });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
