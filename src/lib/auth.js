@@ -32,6 +32,7 @@ export function publicUser(u) {
     name: u.name,
     role: u.role,
     notifyMode: u.notifyMode,
+    activeZoneId: u.activeZoneId,
     hasLocation: u.lat != null && u.lng != null,
     createdAt: u.createdAt,
   };

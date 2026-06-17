@@ -50,29 +50,22 @@ async function notifyNewReport(report, zone, authorId) {
   const refLng = report.lng ?? zone.lng;
   const radius = report.urgent ? URGENT_RADIUS_KM : NORMAL_RADIUS_KM;
 
-  const [vols, admins, zoneEnrollees] = await Promise.all([
+  const [vols, admins] = await Promise.all([
     prisma.user.findMany({
       where: { role: 'voluntario', id: { not: authorId }, notifyMode: { not: 'off' } },
-      select: { id: true, notifyMode: true, lat: true, lng: true },
+      select: { id: true, notifyMode: true, lat: true, lng: true, activeZoneId: true },
     }),
     // admins: solo en urgentes, para no saturar con cada reporte normal
     report.urgent
       ? prisma.user.findMany({ where: { role: 'admin', id: { not: authorId } }, select: { id: true } })
       : Promise.resolve([]),
-    prisma.enrollment.findMany({
-      where: { report: { zoneId: report.zoneId } },
-      select: { userId: true },
-      distinct: ['userId'],
-    }),
   ]);
-
-  const participatedZone = new Set(zoneEnrollees.map((e) => e.userId));
 
   const volTargets = vols
     .filter((u) => {
       switch (u.notifyMode) {
         case 'all': return true;
-        case 'zones': return participatedZone.has(u.id);
+        case 'zone': return u.activeZoneId === report.zoneId;
         case 'nearby':
           if (u.lat == null || u.lng == null) return false;
           return haversineKm([u.lat, u.lng], [refLat, refLng]) <= radius;

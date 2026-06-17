@@ -16,7 +16,8 @@ model User {
   lat        Float?    // ultima ubicacion conocida (para notifs urgentes por cercania)
   lng        Float?
   locationAt DateTime?
-  notifyMode String    @default("nearby") // all | nearby | zones | off
+  notifyMode   String  @default("nearby") // all | nearby | zone | off
+  activeZoneId String? // zona elegida para el modo "zone"
   createdAt  DateTime  @default(now())
 
   reports         Report[]

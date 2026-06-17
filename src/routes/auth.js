@@ -67,8 +67,11 @@ router.post('/location', requireAuth, async (req, res, next) => {
   }
 });
 
-// PATCH /auth/preferences  -- modo de notificacion del usuario
-const prefsSchema = z.object({ notifyMode: z.enum(['all', 'nearby', 'zones', 'off']) });
+// PATCH /auth/preferences  -- modo de notificacion del usuario (+ zona actual)
+const prefsSchema = z.object({
+  notifyMode: z.enum(['all', 'nearby', 'zone', 'off']).optional(),
+  activeZoneId: z.string().nullable().optional(),
+});
 router.patch('/preferences', requireAuth, async (req, res, next) => {
   try {
     const data = prefsSchema.parse(req.body);
