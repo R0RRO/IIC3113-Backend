@@ -26,5 +26,13 @@ export function verifyToken(token) {
 
 // User sin el hash de password, para devolver al cliente
 export function publicUser(u) {
-  return { id: u.id, email: u.email, name: u.name, role: u.role, createdAt: u.createdAt };
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: u.role,
+    notifyMode: u.notifyMode,
+    hasLocation: u.lat != null && u.lng != null,
+    createdAt: u.createdAt,
+  };
 }

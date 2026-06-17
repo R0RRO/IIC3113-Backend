@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
-import { withinZone } from '../lib/geo.js';
+import { withinZone, haversineKm } from '../lib/geo.js';
 import { notify, notifyMany, enrolledUserIds } from '../lib/notify.js';
 
 const router = Router();
@@ -39,6 +39,55 @@ const voteSchema = z.object({
 });
 
 const commentSchema = z.object({ body: z.string().min(1).max(2000) });
+
+const URGENT_RADIUS_KM = 20;
+const NORMAL_RADIUS_KM = 5;
+
+// Notifica a voluntarios (segun su modo) y admins al publicarse un reporte.
+// nearby: dentro de 20km si urgente, 5km si normal. zones: participo antes en la zona.
+async function notifyNewReport(report, zone, authorId) {
+  const refLat = report.lat ?? zone.lat;
+  const refLng = report.lng ?? zone.lng;
+  const radius = report.urgent ? URGENT_RADIUS_KM : NORMAL_RADIUS_KM;
+
+  const [vols, admins, zoneEnrollees] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: 'voluntario', id: { not: authorId }, notifyMode: { not: 'off' } },
+      select: { id: true, notifyMode: true, lat: true, lng: true },
+    }),
+    // admins: solo en urgentes, para no saturar con cada reporte normal
+    report.urgent
+      ? prisma.user.findMany({ where: { role: 'admin', id: { not: authorId } }, select: { id: true } })
+      : Promise.resolve([]),
+    prisma.enrollment.findMany({
+      where: { report: { zoneId: report.zoneId } },
+      select: { userId: true },
+      distinct: ['userId'],
+    }),
+  ]);
+
+  const participatedZone = new Set(zoneEnrollees.map((e) => e.userId));
+
+  const volTargets = vols
+    .filter((u) => {
+      switch (u.notifyMode) {
+        case 'all': return true;
+        case 'zones': return participatedZone.has(u.id);
+        case 'nearby':
+          if (u.lat == null || u.lng == null) return false;
+          return haversineKm([u.lat, u.lng], [refLat, refLng]) <= radius;
+        default: return false;
+      }
+    })
+    .map((u) => u.id);
+
+  await notifyMany(
+    [...volTargets, ...admins.map((a) => a.id)],
+    'new_report',
+    `Reporte ${report.urgent ? 'urgente' : 'nuevo'} en ${zone.name}: ${report.title}`,
+    { reportId: report.id, zoneId: zone.id }
+  );
+}
 
 // GET /reports?zoneId=...  (lista; todos o por zona)
 router.get('/', async (req, res, next) => {
@@ -122,19 +171,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       },
     });
 
-    // Notifica a voluntarios y admins si es urgente
-    if (report.urgent) {
-      const targets = await prisma.user.findMany({
-        where: { role: { in: ['voluntario', 'admin'] }, id: { not: req.user.id } },
-        select: { id: true },
-      });
-      await notifyMany(
-        targets.map((t) => t.id),
-        'new_report',
-        `Nuevo reporte urgente en ${zone.name}: ${report.title}`,
-        { reportId: report.id, zoneId: zone.id }
-      );
-    }
+    await notifyNewReport(report, zone, req.user.id);
 
     res.status(201).json(report);
   } catch (err) {
@@ -165,6 +202,16 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (!existing) return;
     const data = updateSchema.parse(req.body);
     const report = await prisma.report.update({ where: { id: existing.id }, data });
+
+    // Avisa a los voluntarios inscritos que la tarea cambio
+    const enrolled = await enrolledUserIds(report.id);
+    await notifyMany(
+      enrolled.filter((id) => id !== req.user.id),
+      'task_update',
+      `Actualizaron una tarea en la que estás inscrito: ${report.title}`,
+      { reportId: report.id, zoneId: report.zoneId }
+    );
+
     res.json(report);
   } catch (err) {
     next(err);

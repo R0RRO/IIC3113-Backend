@@ -52,6 +52,33 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
+// POST /auth/location  -- guarda la ultima ubicacion del usuario
+const locationSchema = z.object({ lat: z.number(), lng: z.number() });
+router.post('/location', requireAuth, async (req, res, next) => {
+  try {
+    const { lat, lng } = locationSchema.parse(req.body);
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { lat, lng, locationAt: new Date() },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /auth/preferences  -- modo de notificacion del usuario
+const prefsSchema = z.object({ notifyMode: z.enum(['all', 'nearby', 'zones', 'off']) });
+router.patch('/preferences', requireAuth, async (req, res, next) => {
+  try {
+    const data = prefsSchema.parse(req.body);
+    const user = await prisma.user.update({ where: { id: req.user.id }, data });
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /auth/me
 router.get('/me', requireAuth, async (req, res, next) => {
   try {

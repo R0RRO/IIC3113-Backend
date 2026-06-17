@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 3001;
 
 const origins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map((s) => s.trim());
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 app.use(cors({ origin: origins, credentials: true }));
 app.use(express.json());

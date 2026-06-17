@@ -8,12 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("vecino") // vecino | voluntario | admin
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  email      String    @unique
+  password   String
+  name       String
+  role       String    @default("vecino") // vecino | voluntario | admin
+  lat        Float?    // ultima ubicacion conocida (para notifs urgentes por cercania)
+  lng        Float?
+  locationAt DateTime?
+  notifyMode String    @default("nearby") // all | nearby | zones | off
+  createdAt  DateTime  @default(now())
 
   reports         Report[]
   votes           Vote[]
