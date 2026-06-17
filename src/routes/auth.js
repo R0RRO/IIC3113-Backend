@@ -84,6 +84,22 @@ router.patch('/preferences', requireAuth, async (req, res, next) => {
   }
 });
 
+// PATCH /auth/me  -- editar perfil propio
+const profileSchema = z.object({
+  name: z.string().min(1).optional(),
+  bio: z.string().max(500).nullable().optional(),
+  preferredArea: z.string().max(120).nullable().optional(),
+});
+router.patch('/me', requireAuth, async (req, res, next) => {
+  try {
+    const data = profileSchema.parse(req.body);
+    const user = await prisma.user.update({ where: { id: req.user.id }, data });
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /auth/me
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
