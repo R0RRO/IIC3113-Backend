@@ -327,6 +327,7 @@ router.post('/:id/enroll', requireAuth, requireRole('voluntario'), async (req, r
   try {
     const report = await prisma.report.findUnique({ where: { id: req.params.id } });
     if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    if (report.completed) return res.status(409).json({ error: 'Reporte resuelto, inscripciones cerradas' });
 
     const key = { userId_reportId: { userId: req.user.id, reportId: report.id } };
     const existing = await prisma.enrollment.findUnique({ where: key });
@@ -353,6 +354,7 @@ router.delete('/:id/enroll', requireAuth, requireRole('voluntario'), async (req,
   try {
     const report = await prisma.report.findUnique({ where: { id: req.params.id } });
     if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    if (report.completed) return res.status(409).json({ error: 'Reporte resuelto, inscripciones cerradas' });
 
     const key = { userId_reportId: { userId: req.user.id, reportId: report.id } };
     const existing = await prisma.enrollment.findUnique({ where: key });
